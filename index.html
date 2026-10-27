@@ -1,0 +1,113 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<title>IA-1 Aruna 3D Blueprint</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;overflow:hidden;background:#0b3877;font-family:Helvetica,Arial,sans-serif;color:#f4f8ff}
+#ui{position:absolute;left:0;top:50%;transform:translateY(-50%);width:180px;max-height:80vh;overflow:auto;background:rgba(5,25,60,.92);border:1px solid #5b93de;border-left:none;border-radius:0 8px 8px 0;padding:8px 10px;font-size:11px;z-index:5}
+#ui.hidden{transform:translate(-100%,-50%)}
+#menuBtn{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:6;background:#1a5fb4;color:#fff;border:1px solid #8db9ef;border-left:none;border-radius:0 6px 6px 0;padding:10px 6px;font-size:11px;font-weight:bold;cursor:pointer;writing-mode:vertical-rl}
+#ui h3{margin:0 0 6px;font-size:12px;color:#ffc857}
+#ui label{display:block;margin:3px 0;cursor:pointer}
+#ui button{background:#1a5fb4;color:#fff;border:1px solid #8db9ef;border-radius:4px;padding:3px 6px;margin:2px 1px;cursor:pointer;font-size:10px}
+#ui hr{border:0;border-top:1px solid #5b93de66;margin:8px 0}
+#warn{display:none;position:absolute;left:50%;top:40%;transform:translateX(-50%);background:#400;border:1px solid #f88;padding:14px 18px;border-radius:8px}
+</style>
+</head><body>
+<button id="menuBtn" onclick="toggleMenu()">MENU</button>
+<div id="ui" class="hidden">
+<h3>IA-1 Aruna</h3>
+<label><input type="checkbox" id="spin" checked> Auto-rotate</label>
+<label><input type="checkbox" id="wire"> Wireframe</label>
+<label><input type="checkbox" id="landing"> Landing config</label>
+<label><input type="checkbox" id="xray"> X-ray</label>
+<hr>
+<button onclick="view('full')">Full</button>
+<button onclick="view('engines')">Engines</button>
+<button onclick="view('nose')">Nose</button>
+<button onclick="view('fins')">Fins</button>
+<hr>
+<div class="small">Indicus · 1A Aruna 3D Blueprint</div>
+</div>
+<div id="warn">Three.js failed to load.</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+function toggleMenu(){const u=document.getElementById('ui'),b=document.getElementById('menuBtn');u.classList.toggle('hidden');b.textContent=u.classList.contains('hidden')?'MENU':'CLOSE'}
+if(typeof THREE==='undefined'||typeof THREE.OrbitControls==='undefined'){document.getElementById('warn').style.display='block'}else{init()}
+function init(){
+const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);R.shadowMap.enabled=true;document.body.appendChild(R.domElement);
+const S=new THREE.Scene();S.background=new THREE.Color(0x0b3877);S.fog=new THREE.Fog(0x0b3877,200,900);
+const C=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.3,2000);
+const O=new THREE.OrbitControls(C,R.domElement);O.enableDamping=true;O.maxDistance=400;
+S.add(new THREE.HemisphereLight(0xdfeaff,0x1b2f55,0.8));
+const sun=new THREE.DirectionalLight(0xffffff,1);sun.position.set(80,140,60);sun.castShadow=true;S.add(sun);
+S.add(new THREE.DirectionalLight(0x9ec3ff,0.3).position.set(-60,40,-40));
+const root=new THREE.Group();S.add(root);
+function cyl(rT,rB,h,col,y,seg=24){const g=new THREE.CylinderGeometry(rT,rB,h,seg,1,false);const m=new THREE.MeshStandardMaterial({color:col,metalness:0.35,roughness:0.45,side:THREE.DoubleSide});const mesh=new THREE.Mesh(g,m);mesh.position.y=y;mesh.castShadow=true;mesh.receiveShadow=true;return mesh}
+function cone(r,h,col,y){const g=new THREE.ConeGeometry(r,h,24);const m=new THREE.MeshStandardMaterial({color:col,metalness:0.3,roughness:0.5});const mesh=new THREE.Mesh(g,m);mesh.position.y=y;mesh.castShadow=true;return mesh}
+// Stage 1 booster
+const s1=cyl(2.8,2.8,48,0xc8d0dc,24);root.add(s1);
+// Interstage
+root.add(cyl(2.8,2.4,3,0x8a9aaa,49.5));
+// Stage 2
+root.add(cyl(2.4,2.4,18,0xb8c4d0,60));
+// Payload fairing
+root.add(cyl(2.4,1.6,8,0xe8eef4,73));
+root.add(cone(1.6,6,0xe8eef4,80));
+// Engines (9)
+const engG=new THREE.Group();
+for(let i=0;i<9;i++){
+  const a=i===0?0:(Math.PI*2*(i-1)/8),rad=i===0?0:1.7;
+  const e=cyl(0.45,0.55,2.2,0x4a5560,-1.2+ (i===0?0:0),12);
+  e.position.set(Math.cos(a)*rad,0,Math.sin(a)*rad);
+  engG.add(e);
+  const noz=cyl(0.35,0.5,1.2,0x2a3038,-2.5,12);
+  noz.position.copy(e.position);noz.position.y=-2.5;
+  engG.add(noz);
+}
+root.add(engG);
+// Grid fins (4)
+const finG=new THREE.Group();
+for(let i=0;i<4;i++){
+  const a=i*Math.PI/2+Math.PI/4;
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(0.15,3.5,2.2),new THREE.MeshStandardMaterial({color:0x6a7a8a,metalness:0.5,roughness:0.4}));
+  fin.position.set(Math.cos(a)*3.2,42,Math.sin(a)*3.2);
+  fin.rotation.y=a;
+  finG.add(fin);
+}
+root.add(finG);
+// Landing legs (stowed / deployed)
+const legG=new THREE.Group();
+const legMats=[];
+for(let i=0;i<4;i++){
+  const a=i*Math.PI/2;
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(0.25,8,0.35),new THREE.MeshStandardMaterial({color:0x5a6a7a,metalness:0.4,roughness:0.5}));
+  leg.position.set(Math.cos(a)*2.2,2,Math.sin(a)*2.2);
+  leg.rotation.z=(i%2?1:-1)*0.15;
+  leg.rotation.x=Math.sin(a)*0.1;
+  legG.add(leg);legMats.push(leg);
+}
+root.add(legG);
+// Ground
+const ground=new THREE.Mesh(new THREE.CircleGeometry(400,48),new THREE.MeshStandardMaterial({color:0x1d4a8f,roughness:1}));
+ground.rotation.x=-Math.PI/2;ground.position.y=-5;ground.receiveShadow=true;S.add(ground);
+S.add(new THREE.GridHelper(300,40,0x5b93de,0x2a5a9e).translateY(-4.99));
+const mats=[];root.traverse(o=>{if(o.isMesh)mats.push(o.material)});
+function refresh(){
+  const land=$('landing').checked,xr=$('xray').checked,w=$('wire').checked;
+  legG.visible=land;
+  mats.forEach(m=>{m.wireframe=w;if(xr){m.transparent=true;m.opacity=0.25;m.depthWrite=false}else{m.transparent=false;m.opacity=1;m.depthWrite=true}});
+  ground.position.y=land?-2.5:-5;
+}
+const $=id=>document.getElementById(id);
+document.querySelectorAll('#ui input').forEach(c=>c.addEventListener('change',refresh));
+const VIEWS={full:[[90,50,120],[0,40,0]],engines:[[8,-2,14],[0,0,0]],nose:[[14,78,16],[0,76,0]],fins:[[18,48,18],[0,42,0]]};
+window.view=k=>{const v=VIEWS[k];C.position.set(...v[0]);O.target.set(...v[1]);O.update()};
+view('full');refresh();
+addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
+(function loop(){requestAnimationFrame(loop);O.autoRotate=$('spin').checked;O.autoRotateSpeed=1.1;O.update();R.render(S,C)})();
+}
+</script>
+</body></html>
