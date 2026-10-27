@@ -1,113 +1,533 @@
 <!doctype html>
-<html><head>
-<meta charset="utf-8">
-<title>IA-1 Aruna 3D Blueprint</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-body{margin:0;overflow:hidden;background:#0b3877;font-family:Helvetica,Arial,sans-serif;color:#f4f8ff}
-#ui{position:absolute;left:0;top:50%;transform:translateY(-50%);width:180px;max-height:80vh;overflow:auto;background:rgba(5,25,60,.92);border:1px solid #5b93de;border-left:none;border-radius:0 8px 8px 0;padding:8px 10px;font-size:11px;z-index:5}
-#ui.hidden{transform:translate(-100%,-50%)}
-#menuBtn{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:6;background:#1a5fb4;color:#fff;border:1px solid #8db9ef;border-left:none;border-radius:0 6px 6px 0;padding:10px 6px;font-size:11px;font-weight:bold;cursor:pointer;writing-mode:vertical-rl}
-#ui h3{margin:0 0 6px;font-size:12px;color:#ffc857}
-#ui label{display:block;margin:3px 0;cursor:pointer}
-#ui button{background:#1a5fb4;color:#fff;border:1px solid #8db9ef;border-radius:4px;padding:3px 6px;margin:2px 1px;cursor:pointer;font-size:10px}
-#ui hr{border:0;border-top:1px solid #5b93de66;margin:8px 0}
-#warn{display:none;position:absolute;left:50%;top:40%;transform:translateX(-50%);background:#400;border:1px solid #f88;padding:14px 18px;border-radius:8px}
-</style>
-</head><body>
-<button id="menuBtn" onclick="toggleMenu()">MENU</button>
-<div id="ui" class="hidden">
-<h3>IA-1 Aruna</h3>
-<label><input type="checkbox" id="spin" checked> Auto-rotate</label>
-<label><input type="checkbox" id="wire"> Wireframe</label>
-<label><input type="checkbox" id="landing"> Landing config</label>
-<label><input type="checkbox" id="xray"> X-ray</label>
-<hr>
-<button onclick="view('full')">Full</button>
-<button onclick="view('engines')">Engines</button>
-<button onclick="view('nose')">Nose</button>
-<button onclick="view('fins')">Fins</button>
-<hr>
-<div class="small">Indicus · 1A Aruna 3D Blueprint</div>
-</div>
-<div id="warn">Three.js failed to load.</div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script>
-function toggleMenu(){const u=document.getElementById('ui'),b=document.getElementById('menuBtn');u.classList.toggle('hidden');b.textContent=u.classList.contains('hidden')?'MENU':'CLOSE'}
-if(typeof THREE==='undefined'||typeof THREE.OrbitControls==='undefined'){document.getElementById('warn').style.display='block'}else{init()}
-function init(){
-const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);R.shadowMap.enabled=true;document.body.appendChild(R.domElement);
-const S=new THREE.Scene();S.background=new THREE.Color(0x0b3877);S.fog=new THREE.Fog(0x0b3877,200,900);
-const C=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.3,2000);
-const O=new THREE.OrbitControls(C,R.domElement);O.enableDamping=true;O.maxDistance=400;
-S.add(new THREE.HemisphereLight(0xdfeaff,0x1b2f55,0.8));
-const sun=new THREE.DirectionalLight(0xffffff,1);sun.position.set(80,140,60);sun.castShadow=true;S.add(sun);
-S.add(new THREE.DirectionalLight(0x9ec3ff,0.3).position.set(-60,40,-40));
-const root=new THREE.Group();S.add(root);
-function cyl(rT,rB,h,col,y,seg=24){const g=new THREE.CylinderGeometry(rT,rB,h,seg,1,false);const m=new THREE.MeshStandardMaterial({color:col,metalness:0.35,roughness:0.45,side:THREE.DoubleSide});const mesh=new THREE.Mesh(g,m);mesh.position.y=y;mesh.castShadow=true;mesh.receiveShadow=true;return mesh}
-function cone(r,h,col,y){const g=new THREE.ConeGeometry(r,h,24);const m=new THREE.MeshStandardMaterial({color:col,metalness:0.3,roughness:0.5});const mesh=new THREE.Mesh(g,m);mesh.position.y=y;mesh.castShadow=true;return mesh}
-// Stage 1 booster
-const s1=cyl(2.8,2.8,48,0xc8d0dc,24);root.add(s1);
-// Interstage
-root.add(cyl(2.8,2.4,3,0x8a9aaa,49.5));
-// Stage 2
-root.add(cyl(2.4,2.4,18,0xb8c4d0,60));
-// Payload fairing
-root.add(cyl(2.4,1.6,8,0xe8eef4,73));
-root.add(cone(1.6,6,0xe8eef4,80));
-// Engines (9)
-const engG=new THREE.Group();
-for(let i=0;i<9;i++){
-  const a=i===0?0:(Math.PI*2*(i-1)/8),rad=i===0?0:1.7;
-  const e=cyl(0.45,0.55,2.2,0x4a5560,-1.2+ (i===0?0:0),12);
-  e.position.set(Math.cos(a)*rad,0,Math.sin(a)*rad);
-  engG.add(e);
-  const noz=cyl(0.35,0.5,1.2,0x2a3038,-2.5,12);
-  noz.position.copy(e.position);noz.position.y=-2.5;
-  engG.add(noz);
-}
-root.add(engG);
-// Grid fins (4)
-const finG=new THREE.Group();
-for(let i=0;i<4;i++){
-  const a=i*Math.PI/2+Math.PI/4;
-  const fin=new THREE.Mesh(new THREE.BoxGeometry(0.15,3.5,2.2),new THREE.MeshStandardMaterial({color:0x6a7a8a,metalness:0.5,roughness:0.4}));
-  fin.position.set(Math.cos(a)*3.2,42,Math.sin(a)*3.2);
-  fin.rotation.y=a;
-  finG.add(fin);
-}
-root.add(finG);
-// Landing legs (stowed / deployed)
-const legG=new THREE.Group();
-const legMats=[];
-for(let i=0;i<4;i++){
-  const a=i*Math.PI/2;
-  const leg=new THREE.Mesh(new THREE.BoxGeometry(0.25,8,0.35),new THREE.MeshStandardMaterial({color:0x5a6a7a,metalness:0.4,roughness:0.5}));
-  leg.position.set(Math.cos(a)*2.2,2,Math.sin(a)*2.2);
-  leg.rotation.z=(i%2?1:-1)*0.15;
-  leg.rotation.x=Math.sin(a)*0.1;
-  legG.add(leg);legMats.push(leg);
-}
-root.add(legG);
-// Ground
-const ground=new THREE.Mesh(new THREE.CircleGeometry(400,48),new THREE.MeshStandardMaterial({color:0x1d4a8f,roughness:1}));
-ground.rotation.x=-Math.PI/2;ground.position.y=-5;ground.receiveShadow=true;S.add(ground);
-S.add(new THREE.GridHelper(300,40,0x5b93de,0x2a5a9e).translateY(-4.99));
-const mats=[];root.traverse(o=>{if(o.isMesh)mats.push(o.material)});
-function refresh(){
-  const land=$('landing').checked,xr=$('xray').checked,w=$('wire').checked;
-  legG.visible=land;
-  mats.forEach(m=>{m.wireframe=w;if(xr){m.transparent=true;m.opacity=0.25;m.depthWrite=false}else{m.transparent=false;m.opacity=1;m.depthWrite=true}});
-  ground.position.y=land?-2.5:-5;
-}
-const $=id=>document.getElementById(id);
-document.querySelectorAll('#ui input').forEach(c=>c.addEventListener('change',refresh));
-const VIEWS={full:[[90,50,120],[0,40,0]],engines:[[8,-2,14],[0,0,0]],nose:[[14,78,16],[0,76,0]],fins:[[18,48,18],[0,42,0]]};
-window.view=k=>{const v=VIEWS[k];C.position.set(...v[0]);O.target.set(...v[1]);O.update()};
-view('full');refresh();
-addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
-(function loop(){requestAnimationFrame(loop);O.autoRotate=$('spin').checked;O.autoRotateSpeed=1.1;O.update();R.render(S,C)})();
-}
-</script>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>IA-1 Aruna 3D Blueprint</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg0: #061a35;
+      --bg1: #0d2e57;
+      --panel: rgba(9, 22, 44, 0.88);
+      --panel-border: rgba(120, 179, 255, 0.75);
+      --accent: #7ec2ff;
+      --accent-2: #ffc857;
+      --text: #edf6ff;
+      --muted: #aecaf5;
+      --danger: #ff6a6a;
+      --glow: rgba(126, 194, 255, 0.4);
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top, var(--bg1), var(--bg0) 60%);
+      color: var(--text);
+    }
+
+    #ui {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 220px;
+      max-height: 82vh;
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-left: none;
+      border-radius: 0 12px 12px 0;
+      padding: 10px 12px 12px;
+      box-shadow: 8px 0 30px rgba(0,0,0,0.25);
+      z-index: 10;
+      transition: transform 0.25s ease;
+    }
+
+    #ui.hidden {
+      transform: translate(-100%, -50%);
+    }
+
+    #menuBtn {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 11;
+      background: linear-gradient(180deg, #1c6ce0, #124fa1);
+      color: white;
+      border: 1px solid rgba(140, 190, 255, 0.9);
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      box-shadow: 0 0 16px rgba(57, 123, 255, 0.5);
+    }
+
+    #ui h3 {
+      margin: 0 0 10px;
+      color: var(--accent-2);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+
+    #ui label {
+      display: block;
+      margin: 7px 0;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    #ui input {
+      accent-color: #7ec2ff;
+      margin-right: 8px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    #ui button {
+      background: linear-gradient(180deg, #1e69d4, #154b9c);
+      color: white;
+      border: 1px solid rgba(142, 200, 255, 0.9);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      min-width: 58px;
+    }
+
+    #ui button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 14px rgba(126, 194, 255, 0.3);
+    }
+
+    #ui button.active {
+      background: linear-gradient(180deg, #fcad3d, #d98817);
+      color: #1b140d;
+      border-color: #ffd59d;
+      box-shadow: 0 0 16px rgba(255, 185, 76, 0.45);
+    }
+
+    #ui hr {
+      border: 0;
+      border-top: 1px solid rgba(126, 194, 255, 0.35);
+      margin: 10px 0;
+    }
+
+    .meta {
+      margin-top: 8px;
+      font-size: 10px;
+      line-height: 1.55;
+      color: var(--muted);
+      opacity: 0.9;
+    }
+
+    #hud {
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      z-index: 9;
+      background: rgba(7, 20, 35, 0.55);
+      border: 1px solid rgba(126, 194, 255, 0.5);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      backdrop-filter: blur(2px);
+    }
+
+    .badge {
+      color: var(--accent-2);
+      font-weight: bold;
+    }
+
+    #warn {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 40%;
+      transform: translateX(-50%);
+      background: rgba(70, 0, 0, 0.88);
+      border: 1px solid rgba(255, 110, 110, 0.9);
+      color: white;
+      padding: 14px 20px;
+      border-radius: 10px;
+      z-index: 30;
+      box-shadow: 0 0 22px rgba(255, 100, 100, 0.25);
+    }
+
+    @media (max-width: 700px) {
+      #ui {
+        width: 170px;
+      }
+      #hud {
+        right: 10px;
+        top: 10px;
+        font-size: 9px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button id="menuBtn" onclick="toggleMenu()">MENU</button>
+
+  <div id="ui" class="hidden">
+    <h3>IA-1 Aruna</h3>
+
+    <label><input type="checkbox" id="spin" checked /> Auto-rotate</label>
+    <label><input type="checkbox" id="wire" /> Wireframe</label>
+    <label><input type="checkbox" id="landing" /> Landing config</label>
+    <label><input type="checkbox" id="xray" /> X-ray</label>
+    <label><input type="checkbox" id="explode" /> Exploded view</label>
+
+    <hr />
+    <div class="button-row">
+      <button class="view-btn active" data-view="full">Full</button>
+      <button class="view-btn" data-view="engines">Engines</button>
+      <button class="view-btn" data-view="nose">Nose</button>
+      <button class="view-btn" data-view="fins">Fins</button>
+      <button class="view-btn" data-view="landing">Landing</button>
+    </div>
+
+    <hr />
+    <div class="meta">
+      Indicus • IA-1 Aruna<br />
+      3D Blueprint Concept<br />
+      HUD / View Controls
+    </div>
+  </div>
+
+  <div id="hud"><span class="badge">IA-1</span> // ARUNA</div>
+  <div id="warn">Three.js failed to load.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    function toggleMenu() {
+      const ui = document.getElementById('ui');
+      const btn = document.getElementById('menuBtn');
+      ui.classList.toggle('hidden');
+      btn.textContent = ui.classList.contains('hidden') ? 'MENU' : 'CLOSE';
+    }
+
+    if (typeof THREE === 'undefined' || typeof THREE.OrbitControls === 'undefined') {
+      document.getElementById('warn').style.display = 'block';
+    } else {
+      init();
+    }
+
+    function init() {
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x071d3a);
+      scene.fog = new THREE.Fog(0x071d3a, 220, 1000);
+
+      const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.3, 2000);
+      camera.position.set(90, 50, 120);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxDistance = 500;
+      controls.minDistance = 12;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 1.2;
+
+      const ambient = new THREE.HemisphereLight(0xe8f3ff, 0x18335c, 1.0);
+      scene.add(ambient);
+
+      const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+      sun.position.set(90, 140, 60);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.camera.left = -120;
+      sun.shadow.camera.right = 120;
+      sun.shadow.camera.top = 120;
+      sun.shadow.camera.bottom = -120;
+      scene.add(sun);
+
+      const rim = new THREE.DirectionalLight(0x9ec3ff, 0.4);
+      rim.position.set(-70, 30, -40);
+      scene.add(rim);
+
+      const root = new THREE.Group();
+      root.rotation.y = 0.3;
+      scene.add(root);
+
+      function makeCylinder(radiusTop, radiusBottom, height, color, y, segments = 28, metalness = 0.45) {
+        const geom = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments, 1, false);
+        const mat = new THREE.MeshStandardMaterial({
+          color,
+          metalness,
+          roughness: 0.42,
+          side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.y = y;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+      }
+
+      function makeCone(radius, height, color, y) {
+        const geom = new THREE.ConeGeometry(radius, height, 28);
+        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.28, roughness: 0.55 });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.y = y;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+      }
+
+      function makeBox(w, h, d, color, x, y, z, rotY = 0) {
+        const geom = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.45, roughness: 0.5 });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.y = rotY;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+      }
+
+      const stage1 = makeCylinder(2.8, 2.8, 48, 0xc9d4e0, 24, 30, 0.38);
+      root.add(stage1);
+
+      const interstage = makeCylinder(2.8, 2.4, 3.6, 0x8699ae, 49.5, 28, 0.42);
+      root.add(interstage);
+
+      const stage2 = makeCylinder(2.35, 2.35, 18, 0xb9c8d8, 60, 28, 0.4);
+      root.add(stage2);
+
+      const payloadFairing = makeCylinder(2.35, 1.6, 8, 0xe9eef8, 73, 28, 0.3);
+      root.add(payloadFairing);
+
+      const noseCone = makeCone(1.6, 6, 0xe9eef8, 80);
+      root.add(noseCone);
+
+      const engineRing = new THREE.Group();
+      for (let i = 0; i < 9; i++) {
+        const a = i === 0 ? 0 : (Math.PI * 2 * (i - 1)) / 8;
+        const radial = i === 0 ? 0 : 1.7;
+
+        const body = makeCylinder(0.42, 0.55, 2.3, 0x485364, -1.2, 14, 0.8);
+        body.position.set(Math.cos(a) * radial, 0, Math.sin(a) * radial);
+        engineRing.add(body);
+
+        const nozzle = makeCylinder(0.32, 0.5, 1.1, 0x2a3038, -2.45, 12, 0.9);
+        nozzle.position.copy(body.position);
+        nozzle.position.y = -2.45;
+        engineRing.add(nozzle);
+      }
+      root.add(engineRing);
+
+      const finGroup = new THREE.Group();
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2 + Math.PI / 4;
+        const fin = makeBox(0.2, 3.8, 2.2, 0x6d7d8b, Math.cos(a) * 3.2, 42, Math.sin(a) * 3.2, a);
+        finGroup.add(fin);
+      }
+      root.add(finGroup);
+
+      const legGroup = new THREE.Group();
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2;
+        const leg = new THREE.Mesh(
+          new THREE.BoxGeometry(0.22, 8.2, 0.32),
+          new THREE.MeshStandardMaterial({ color: 0x576d7b, metalness: 0.4, roughness: 0.45 })
+        );
+        leg.position.set(Math.cos(a) * 2.2, 2, Math.sin(a) * 2.2);
+        leg.rotation.z = (i % 2 ? 1 : -1) * 0.18;
+        leg.rotation.x = Math.sin(a) * 0.12;
+        leg.castShadow = true;
+        leg.receiveShadow = true;
+        legGroup.add(leg);
+      }
+      root.add(legGroup);
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(2.8, 0.08, 12, 80),
+        new THREE.MeshStandardMaterial({ color: 0x9ec3ff, metalness: 0.9, roughness: 0.2, emissive: 0x123d7a, emissiveIntensity: 0.4 })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 43.5;
+      root.add(ring);
+
+      const allMeshes = [];
+      root.traverse((obj) => {
+        if (obj.isMesh) allMeshes.push(obj);
+      });
+
+      const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(380, 64),
+        new THREE.MeshStandardMaterial({ color: 0x1a4a8a, roughness: 1, metalness: 0.15 })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -5;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const grid = new THREE.GridHelper(300, 38, 0x5b93de, 0x2a5a9e);
+      grid.position.y = -4.98;
+      scene.add(grid);
+
+      const stars = new THREE.Points(
+        new THREE.BufferGeometry(),
+        new THREE.PointsMaterial({ color: 0xb9d8ff, size: 1.8, transparent: true, opacity: 0.8 })
+      );
+      const starData = [];
+      for (let i = 0; i < 2000; i++) {
+        const r = 300 + Math.random() * 400;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.cos(phi) * 0.75;
+        const z = r * Math.sin(phi) * Math.sin(theta);
+        starData.push(x, y, z);
+      }
+      stars.geometry.setAttribute('position', new THREE.Float32BufferAttribute(starData, 3));
+      scene.add(stars);
+
+      const state = {
+        autoRotate: true,
+        wireframe: false,
+        landing: false,
+        xray: false,
+        explode: false,
+        view: 'full'
+      };
+
+      const $ = (id) => document.getElementById(id);
+
+      function applyVisuals() {
+        allMeshes.forEach((mesh) => {
+          const m = mesh.material;
+          if (m && m.wireframe !== undefined) m.wireframe = state.wireframe;
+          if (m && m.transparent !== undefined) {
+            m.transparent = state.xray || state.explode;
+            m.opacity = state.xray ? 0.35 : 1;
+            m.depthWrite = !state.xray;
+            if (state.explode && !state.xray) m.opacity = 0.9;
+          }
+        });
+
+        legGroup.visible = state.landing;
+        ground.position.y = state.landing ? -2.5 : -5;
+      }
+
+      function updateExplode() {
+        const force = state.explode ? 5.5 : 0;
+        engineRing.position.x = state.explode ? -2.2 : 0;
+        engineRing.position.z = state.explode ? 2.4 : 0;
+        finGroup.position.x = state.explode ? 2.5 : 0;
+        finGroup.position.z = state.explode ? -2.5 : 0;
+        noseCone.position.y = 80 + (state.explode ? 3.5 : 0);
+        stage1.position.y = 24 + (state.explode ? 0.8 : 0);
+        interstage.position.y = 49.5 + (state.explode ? 1.1 : 0);
+        stage2.position.y = 60 + (state.explode ? 1.8 : 0);
+        payloadFairing.position.y = 73 + (state.explode ? 2.4 : 0);
+        ring.position.y = 43.5 + (state.explode ? 2.0 : 0);
+      }
+
+      function setView(name) {
+        const views = {
+          full: { pos: [90, 50, 120], target: [0, 40, 0] },
+          engines: { pos: [8, -2, 14], target: [0, 0, 0] },
+          nose: { pos: [14, 78, 16], target: [0, 76, 0] },
+          fins: { pos: [18, 48, 18], target: [0, 42, 0] },
+          landing: { pos: [34, 8, 36], target: [0, 12, 0] }
+        };
+
+        state.view = name;
+        const v = views[name] || views.full;
+        camera.position.set(...v.pos);
+        controls.target.set(...v.target);
+        controls.update();
+
+        document.querySelectorAll('.view-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.view === name);
+        });
+      }
+
+      $('spin').addEventListener('change', () => {
+        state.autoRotate = $('spin').checked;
+      });
+
+      $('wire').addEventListener('change', () => {
+        state.wireframe = $('wire').checked;
+        applyVisuals();
+      });
+
+      $('landing').addEventListener('change', () => {
+        state.landing = $('landing').checked;
+        applyVisuals();
+      });
+
+      $('xray').addEventListener('change', () => {
+        state.xray = $('xray').checked;
+        applyVisuals();
+      });
+
+      $('explode').addEventListener('change', () => {
+        state.explode = $('explode').checked;
+        applyVisuals();
+        updateExplode();
+      });
+
+      document.querySelectorAll('.view-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setView(btn.dataset.view));
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      applyVisuals();
+      updateExplode();
+      setView('full');
+
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = clock.getDelta();
+        const speed = state.autoRotate ? 1.2 : 0;
+        root.rotation.y += dt * speed * 0.6;
+        stars.rotation.y += dt * 0.02;
+        controls.autoRotate = state.autoRotate;
+        controls.autoRotateSpeed = 1.2;
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    }
+  </script>
+</body>
+</html>
